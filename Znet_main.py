@@ -47,7 +47,7 @@ def main():
     Defining Data
     """
 
-    data_dir = 'Chicken'
+    data_dir = './Dataset'
 
     image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                               data_transforms[x])
