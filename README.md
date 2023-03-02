@@ -1,1 +1,2 @@
-# Znet
+# Znet for Image Classification
+
