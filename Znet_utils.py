@@ -1,18 +1,30 @@
 import torch
 from matplotlib import pyplot as plt
 import numpy as np
+from torchmetrics import Accuracy, Recall, Precision, F1Score
+from tabulate import tabulate
 
-def train_model(model, criterion, optimizer, dataloaders, dataset_sizes, num_epochs=5):
+def train_model(model, criterion, optimizer, dataloaders, num_classes, num_epochs=5):
+    accuracy = Accuracy(average='macro', num_classes=num_classes)
+    precision = Precision(average='macro', num_classes=num_classes)
+    recall = Recall(average='macro', num_classes=num_classes)
+    f1 = F1Score(average='macro', num_classes=num_classes)
+
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch+1, num_epochs))
         print('-' * 10)
+
+        Tacc, Tprec, Trec, Tf1 = 0.0, 0.0, 0.0, 0.0
+        Vacc, Vprec, Vrec, Vf1 = 0.0, 0.0, 0.0, 0.0
 
         for phase in ['train', 'val']:
             if phase == 'train':
                 model.train()
 
-                running_loss = 0.0
-                running_corrects = 0
+                acc_list = []
+                prec_list = []
+                rec_list = []
+                f1_score_list = []
 
                 for inputs, labels in dataloaders[phase]:
 
@@ -25,20 +37,29 @@ def train_model(model, criterion, optimizer, dataloaders, dataset_sizes, num_epo
                         optimizer.step()
 
                     _, preds = torch.max(outputs, 1)
-                    running_loss += loss.item() * inputs.size(0)
-                    running_corrects += torch.sum(preds == labels.data)
 
-                epoch_loss = running_loss / dataset_sizes[phase]
-                epoch_acc = running_corrects.double() / dataset_sizes[phase]
+                    acc = accuracy(preds, labels.data)
+                    prec = precision(preds, labels.data)
+                    rec = recall(preds, labels.data)
+                    f1_score = f1(preds, labels.data)
 
-                print('{} loss: {:.4f}, acc: {:.4f}'.format(phase,
-                                                            epoch_loss,
-                                                            epoch_acc))
+                    acc_list.append(acc)
+                    prec_list.append(prec)
+                    rec_list.append(rec)
+                    f1_score_list.append(f1_score)
+
+                Tacc = sum(acc_list) / len(acc_list)
+                Tprec = sum(prec_list) / len(prec_list)
+                Trec = sum(rec_list) / len(rec_list)
+                Tf1 = sum(f1_score_list) / len(f1_score_list)
+
             else:
                 model.eval()
 
-                running_loss = 0.0
-                running_corrects = 0
+                Vacc_list = []
+                Vprec_list = []
+                Vrec_list = []
+                Vf1_score_list = []
 
                 for inputs, labels in dataloaders[phase]:
 
@@ -51,16 +72,31 @@ def train_model(model, criterion, optimizer, dataloaders, dataset_sizes, num_epo
                         optimizer.step()
 
                     _, preds = torch.max(outputs, 1)
-                    running_loss += loss.item() * inputs.size(0)
-                    running_corrects += torch.sum(preds == labels.data)
 
-                epoch_loss = running_loss / dataset_sizes[phase]
-                epoch_acc = running_corrects.double() / dataset_sizes[phase]
+                    Vacc = accuracy(preds, labels.data)
+                    Vprec = precision(preds, labels.data)
+                    Vrec = recall(preds, labels.data)
+                    Vf1_score = f1(preds, labels.data)
 
-                print('{} loss: {:.4f}, acc: {:.4f}'.format(phase,
-                                                            epoch_loss,
-                                                            epoch_acc))
-                print("\n")
+                    Vacc_list.append(Vacc)
+                    Vprec_list.append(Vprec)
+                    Vrec_list.append(Vrec)
+                    Vf1_score_list.append(Vf1_score)
+
+                #
+                Vacc = sum(Vacc_list) / len(Vacc_list)
+                Vprec = sum(Vprec_list) / len(Vprec_list)
+                Vrec = sum(Vrec_list) / len(Vrec_list)
+                Vf1 = sum(Vf1_score_list) / len(Vf1_score_list)
+
+        data = [["Train", Tacc, Tprec, Trec, Tf1],
+                ["Validation", Vacc, Vprec, Vrec, Vf1]]
+
+        headers = ["Type", 'Accuracy', 'Precision', 'Recall', 'F1 Score']
+
+        print(tabulate(data, headers=headers))
+        print("\n")
+
     return model
 
 
