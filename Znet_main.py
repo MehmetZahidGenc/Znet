@@ -69,7 +69,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(Znet_model.classifier_part.parameters())
 
-    model_trained = train_model(Znet_model, criterion, optimizer, dataloaders, dataset_sizes, num_epochs=10)
+    model_trained = train_model(Znet_model, criterion, optimizer, dataloaders, num_classes=5, num_epochs=10)
 
 
 if __name__ == '__main__':
